@@ -5,8 +5,13 @@
 #include <memory>
 #include <stdexcept>
 #include <vector>
+#include <fstream>
 #include <numeric>
-// #include <type_traits>
+#include <algorithm>
+#include <numeric>
+#include <functional>
+#include <string>
+#include <utility>
 // #include <concepts>
 
 template <class T>
@@ -115,20 +120,67 @@ public:
         return data_[calculateLinearIndex(idx)];
     }
 
+    // Non-const version for mutating access
+    ComponentType &value(size_t idx)
+    {
+        if (idx >= numElements_)
+        {
+            throw std::out_of_range("Linear index out of bounds");
+        }
+        return data_[idx];
+    }
+
+    // Const version for read-only access
+    const ComponentType &value(size_t idx) const
+    {
+        if (idx >= numElements_)
+        {
+            throw std::out_of_range("Linear index out of bounds");
+        }
+        return data_[idx];
+    }
+
 private:
     // TODO: Probably you need some members here...
     std::unique_ptr<ComponentType[]> data_;
     std::vector<size_t> shape_;
     size_t numElements_;
 
-    size_t calculateNumElements(std::vector<size_t> &shape)
+    size_t calculateNumElements(const std::vector<size_t> &shape)
     {
         if (shape.empty())
         {
             return 1;
         }
 
-        return std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<size_t>()) << std::endl;
+        return std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<size_t>());
+    }
+
+    size_t calculateLinearIndex(const std::vector<size_t> &idx) const
+    {
+        if (idx.size() != rank())
+        {
+            if (rank() == 0 && idx.empty())
+            {
+                return 0;
+            }
+            throw std::invalid_argument("Index dimension mismatch");
+        }
+
+        size_t linearIndex = 0;
+        size_t stride = 1;
+
+        for (int i = static_cast<int>(rank()) - 1; i >= 0; --i)
+        {
+            if (idx[i] >= shape_[i])
+            {
+                throw std::out_of_range("Index out of bounds");
+            }
+            linearIndex += idx[i] * stride;
+            stride *= shape_[i];
+        }
+
+        return linearIndex;
     }
 };
 
@@ -139,6 +191,23 @@ template <Arithmetic ComponentType>
 bool operator==(const Tensor<ComponentType> &a, const Tensor<ComponentType> &b)
 {
     // TODO: Implement this comparison.
+    if (a.rank() != b.rank())
+    {
+        return false;
+    }
+    if (a.shape() != b.shape())
+    {
+        return false;
+    }
+
+    for (size_t i = 0; i < a.numElements(); i++)
+    {
+        if (a.value(i) != b.value(i))
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 // Pretty-prints the tensor to stdout.
@@ -156,6 +225,29 @@ Tensor<ComponentType> readTensorFromFile(const std::string &filename)
 {
     // TODO: Implement this function to read in tensors from file.
     //       The format is defined in the instructions.
+
+    std::ifstream file(filename);
+    if (!file)
+    {
+        throw std::runtime_error("Could not open file: " + filename);
+    }
+
+    size_t rank;
+    file >> rank;
+
+    std::vector<size_t> shape(rank);
+    for (size_t i = 0; i < rank; i++)
+    {
+        file >> shape[i];
+    }
+
+    Tensor<ComponentType> tensor(shape);
+
+    for (size_t i = 0; i < tensor.numElements(); i++)
+    {
+        file >> tensor.value(i);
+    }
+    return tensor;
 }
 
 // Writes a tensor to file.
@@ -164,4 +256,22 @@ void writeTensorToFile(const Tensor<ComponentType> &tensor, const std::string &f
 {
     // TODO: Implement this function to write tensors to file.
     //       The format is defined in the instructions.
+
+    std::ofstream file(filename);
+    if (!file)
+    {
+        throw std::runtime_error("Could not open file for writing : " + filename);
+    }
+
+    file << tensor.rank() << "\n";
+
+    for (size_t i = 0; i < tensor.rank(); i++)
+    {
+        file << tensor.shape()[i] << "\n";
+    }
+
+    for (size_t i = 0; i < tensor.numElements(); i++)
+    {
+        file << tensor.value(i) << "\n";
+    }
 }
