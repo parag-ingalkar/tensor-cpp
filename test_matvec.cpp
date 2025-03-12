@@ -2,7 +2,7 @@
 #include "matvec.hpp"
 #include "tensor.hpp"
 
-void check(bool condition, const std::string& msg)
+void check(bool condition, const std::string &msg)
 {
     if (!condition)
     {
@@ -14,16 +14,16 @@ void check(bool condition, const std::string& msg)
     }
 }
 
-void test_matvec(std::vector< std::pair< bool, std::string > >& results)
+void test_matvec(std::vector<std::pair<bool, std::string>> &results)
 {
 
-    Matrix< int > A("data/matrix");
-    Vector< int > x("data/vector_in");
-    Vector< int > y_read("data/vector_out");
+    Matrix<int> A("data/matrix");
+    Vector<int> x("data/vector_in");
+    Vector<int> y_read("data/vector_out");
 
-    std::cout << A.tensor() << std::endl;
-    std::cout << x.tensor() << std::endl;
-    std::cout << y_read.tensor() << std::endl;
+    // std::cout << A.tensor() << std::endl;
+    // std::cout << x.tensor() << std::endl;
+    // std::cout << y_read.tensor() << std::endl;
 
     auto y_comp = matvec(A, x);
 
@@ -32,7 +32,7 @@ void test_matvec(std::vector< std::pair< bool, std::string > >& results)
 
 int main()
 {
-    std::vector< std::pair< bool, std::string > > results;
+    std::vector<std::pair<bool, std::string>> results;
 
     test_matvec(results);
 
